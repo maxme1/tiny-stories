@@ -15,6 +15,6 @@ jobs:
         with:
           node-version: 18
       - run: npm i && npm run ng build --prod
-      - run: git checkout gh-pages && git pull
+      - run: git pull && git checkout gh-pages
       - run: cp -r dist/*/* .
       - run: git add -u && git commit -m "compiled" && git push
