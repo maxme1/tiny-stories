@@ -1,0 +1,122 @@
+<div class="container pt-2">
+  <div>
+    <div class="d-flex justify-content-between">
+      <small class="align-self-end">Original text</small>
+      <small *ngIf="showAcks" class="align-self-end"> The stories provided here are a small subset from the <a
+          href="https://arxiv.org/abs/2305.07759">Tiny Stories</a> dataset.</small>
+
+      <div class="btn-group justify-self-end">
+        <button class="btn btn-secondary btn-sm" (click)="toggleAcknowlegements()" title="Settings">
+          <i class="bi bi-info-square"></i>
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="toggleSettings()" title="Settings">
+          <i class="bi bi-gear-wide"></i>
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="next()" title="Another text">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      </div>
+    </div>
+
+    <form *ngIf="showSettings" class="mt-1">
+      <div class="form-group row">
+        <label for="minLength" class="col-sm-2 col-form-label">Min length</label>
+        <div class="col-sm-10">
+          <input type="number" class="form-control form-control-sm col-1" id="minLength" name="minLength"
+            [(ngModel)]="minLength" (input)="store('minLength', minLength)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="maxLength" class="col-sm-2 col-form-label">Max length</label>
+        <div class="col-sm-10">
+          <input type="number" class="form-control form-control-sm col-1" id="maxLength" name="maxLength"
+            [(ngModel)]="maxLength" (input)="store('maxLength', maxLength)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="sourceLanguage" class="col-sm-2 col-form-label">Source language</label>
+        <div class="col-sm-10">
+          <input class="form-control form-control-sm col-1" id="sourceLanguage" name="sourceLanguage"
+            [(ngModel)]="sourceLanguage" (input)="store('sourceLanguage', sourceLanguage)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="targetLanguage" class="col-sm-2 col-form-label">Target language</label>
+        <div class="col-sm-10">
+          <input class="form-control form-control-sm col-1" id="targetLanguage" name="targetLanguage"
+            [(ngModel)]="targetLanguage" (input)="store('targetLanguage', targetLanguage)">
+        </div>
+      </div>
+    </form>
+    <!-- <input type="password" class="form-control form-control-sm" id="token" name="token" [(ngModel)]="token"
+    (input)="store('token', token)" placeholder="Optional"> -->
+
+  </div>
+  <div>
+    <textarea autoResize [(ngModel)]="original" id="original" class="form-control mt-1 mb-1"></textarea>
+
+    <div class="d-flex justify-content-between">
+      <small class="align-self-end">Translation</small>
+      <div class="d-flex">
+        <small class="align-self-center p-1">Show errors</small>
+        <div class="btn-group">
+          <button (click)="setDiffMode(DiffMode.All)" class="btn btn-secondary btn-sm"
+            [class.active]="diffMode === DiffMode.All">All</button>
+          <button (click)="setDiffMode(DiffMode.Current)" class="btn btn-secondary btn-sm"
+            [class.active]="diffMode === DiffMode.Current">Current</button>
+          <button (click)="setDiffMode(DiffMode.None)" class="btn btn-secondary btn-sm"
+            [class.active]="diffMode === DiffMode.None">None</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-1 mb-1">
+      <div class="main">
+        <div #backdrop class="backdrop">
+          <div class="highlights">
+            <span *ngFor="let segment of segments">
+              <span *ngIf="segment.common">{{segment.common}}</span>
+              <span *ngIf="!segment.common">
+                <span [ngClass]="this.segmentColor(segment)">{{segment.removed}}</span>
+                <span *ngIf="segment.added && !segment.removed" class="green">{{' '}}</span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <textarea class="form-control highlighted" autoResize [(ngModel)]="translation" #textarea (input)="diff()"
+          (keyup)="updatePosition()" (click)="updatePosition()" id="translation"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex mt-1">
+    <div *ngIf="token.length == 0" class="d-flex col">
+      <div class="btn-group">
+        <!-- <i class="bi bi-check"></i> -->
+        <button (click)="checkTranslation()" class="btn btn-secondary btn-sm">Click here</button>
+      </div>
+      <small class="align-self-center p-1">to copy the prompt, then paste the result here:</small>
+      <textarea #fixedPaste class="btn btn-secondary btn-sm button-like" (paste)="handlePaste($event)"
+        (change)="handleAfterPaste()" (input)="handleAfterPaste()"></textarea>
+    </div>
+    <div *ngIf="token.length > 0" class="col">
+      <div class="btn-group">
+        <button (click)="checkTranslation()" class="btn btn-secondary btn-sm">Check</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <ng-container *ngFor="let segment of segments">
+      <div
+        *ngIf="!segment.common && (diffMode == DiffMode.All || (diffMode == DiffMode.Current && segment.start <= currentPosition && currentPosition <= segment.stop))"
+        class="col border p-1 d-inline-block rounded"
+        [class.border-secondary]="segment.start <= currentPosition && currentPosition <= segment.stop">
+        <span style="color: red">{{segment.removed}} </span>
+        <span style="color: green">{{segment.added}}</span>
+        <span *ngIf="!!segment.reason">: {{segment.reason}}</span>
+      </div>
+    </ng-container>
+  </div>
+</div>
