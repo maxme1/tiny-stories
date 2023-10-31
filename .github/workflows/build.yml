@@ -1,0 +1,20 @@
+name: Build the site
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  check_version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm i && npm run ng build --prod
+      - run: git checkout gh-pages && git pull
+      - run: cp -r dist/*/* .
+      - run: git add -u && git commit -m "compiled" && git push

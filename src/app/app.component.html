@@ -1,18 +1,22 @@
 <div class="container pt-2">
   <div>
     <div class="d-flex justify-content-between">
-      <small class="align-self-end">Original text</small>
-      <small *ngIf="showAcks" class="align-self-end"> The stories provided here are a small subset from the <a
-          href="https://arxiv.org/abs/2305.07759">Tiny Stories</a> dataset.</small>
+      <span class="align-self-end">Original text</span>
+      <span *ngIf="showAcks" class="align-self-end"> The stories provided here are a small subset from the
+        <a href="https://arxiv.org/abs/2305.07759">Tiny Stories</a> dataset.</span>
 
       <div class="btn-group justify-self-end">
-        <button class="btn btn-secondary btn-sm" (click)="toggleAcknowlegements()" title="Settings">
+        <button class="btn btn-secondary btn" (click)="toggleAcknowlegements()" title="Settings">
           <i class="bi bi-info-square"></i>
         </button>
-        <button class="btn btn-secondary btn-sm" (click)="toggleSettings()" title="Settings">
+        <a class="btn btn-secondary btn" title="Source code" target="_blank"
+          href="https://github.com/maxme1/tiny-stories">
+          <i class="bi bi-github"></i>
+        </a>
+        <button class="btn btn-secondary btn" (click)="toggleSettings()" title="Settings">
           <i class="bi bi-gear-wide"></i>
         </button>
-        <button class="btn btn-secondary btn-sm" (click)="next()" title="Another text">
+        <button class="btn btn-secondary btn" (click)="next()" title="Another text">
           <i class="bi bi-arrow-repeat"></i>
         </button>
       </div>
@@ -56,16 +60,21 @@
     <textarea autoResize [(ngModel)]="original" id="original" class="form-control mt-1 mb-1"></textarea>
 
     <div class="d-flex justify-content-between">
-      <small class="align-self-end">Translation</small>
+      <span class="align-self-end">Translation</span>
       <div class="d-flex">
-        <small class="align-self-center p-1">Show errors</small>
+        <span class="align-self-center p-1">Show errors</span>
         <div class="btn-group">
-          <button (click)="setDiffMode(DiffMode.All)" class="btn btn-secondary btn-sm"
+          <button (click)="setDiffMode(DiffMode.All)" class="btn btn-secondary btn"
             [class.active]="diffMode === DiffMode.All">All</button>
-          <button (click)="setDiffMode(DiffMode.Current)" class="btn btn-secondary btn-sm"
+          <button (click)="setDiffMode(DiffMode.Current)" class="btn btn-secondary btn"
             [class.active]="diffMode === DiffMode.Current">Current</button>
-          <button (click)="setDiffMode(DiffMode.None)" class="btn btn-secondary btn-sm"
+          <button (click)="setDiffMode(DiffMode.None)" class="btn btn-secondary btn"
             [class.active]="diffMode === DiffMode.None">None</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn" (click)="clearDiffs()" title="Clear">
+            <i class="bi bi-eraser-fill"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -94,15 +103,15 @@
     <div *ngIf="token.length == 0" class="d-flex col">
       <div class="btn-group">
         <!-- <i class="bi bi-check"></i> -->
-        <button (click)="checkTranslation()" class="btn btn-secondary btn-sm">Click here</button>
+        <button (click)="checkTranslation()" class="btn btn-secondary">Click here</button>
       </div>
-      <small class="align-self-center p-1">to copy the prompt, then paste the result here:</small>
-      <textarea #fixedPaste class="btn btn-secondary btn-sm button-like" (paste)="handlePaste($event)"
+      <span class="align-self-center p-1">to copy the prompt, then paste the result here:</span>
+      <textarea #fixedPaste class="btn btn-secondary button-like align-self-center" (paste)="handlePaste($event)"
         (change)="handleAfterPaste()" (input)="handleAfterPaste()"></textarea>
     </div>
     <div *ngIf="token.length > 0" class="col">
       <div class="btn-group">
-        <button (click)="checkTranslation()" class="btn btn-secondary btn-sm">Check</button>
+        <button (click)="checkTranslation()" class="btn btn-secondary">Check</button>
       </div>
     </div>
   </div>

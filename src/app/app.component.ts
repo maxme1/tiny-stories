@@ -67,6 +67,11 @@ export class AppComponent implements OnInit {
     this.store('diffMode', value);
   }
 
+  clearDiffs() {
+    this.fixed = '';
+    this.segments = [];
+  }
+
   store(field: string, value: any) {
     localStorage.setItem(field, JSON.stringify(value));
   }
@@ -133,9 +138,9 @@ export class AppComponent implements OnInit {
     const texts = this.localLibrary.filter(t => this.minLength <= t.length && t.length <= this.maxLength);
     if (texts.length > 0) {
       this.original = texts[Math.floor(Math.random() * texts.length)];
-      this.fixed = this.translation = '';
-      this.segments = [];
+      this.translation = '';
       this.currentPosition = 0;
+      this.clearDiffs();
     }
   }
 
