@@ -17,4 +17,9 @@ jobs:
       - run: npm i && npm run ng build --prod
       - run: git pull && git checkout gh-pages
       - run: cp -r dist/*/* .
-      - run: git add -u && git commit -m "compiled" && git push
+      - run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions-bot@users.noreply.github.com'
+        git add -u
+        git commit -m "compiled"
+        git push
