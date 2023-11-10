@@ -1,0 +1,159 @@
+<div class="container pt-2">
+  <div>
+    <div class="d-flex justify-content-between">
+      <span *ngIf="!showSettings" class="align-self-end">Original text</span>
+      <span *ngIf="showAcks" class="align-self-end"> The stories provided here are a subset from the
+        <a href="https://arxiv.org/abs/2305.07759">Tiny Stories</a> dataset.</span>
+
+      <div class="btn-group justify-self-end">
+        <button class="btn btn-secondary btn" (click)="toggleAcknowlegements()" title="Settings">
+          <i class="bi bi-info-square"></i>
+        </button>
+        <a class="btn btn-secondary btn" title="Source code" target="_blank"
+          href="https://github.com/maxme1/tiny-stories">
+          <i class="bi bi-github"></i>
+        </a>
+        <button class="btn btn-secondary btn" (click)="toggleSettings()" title="Settings">
+          <i class="bi bi-gear-wide"></i>
+        </button>
+        <button class="btn btn-secondary btn" (click)="next()" title="Another text">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      </div>
+    </div>
+
+    <form *ngIf="showSettings" class="mt-1">
+      <div class="form-group row">
+        <label for="minLength" class="col-sm-2 col-form-label">Min length</label>
+        <div class="col-sm-10">
+          <input type="number" class="form-control form-control-sm col-1" id="minLength" name="minLength"
+            [(ngModel)]="minLength" (input)="store('minLength', minLength)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="maxLength" class="col-sm-2 col-form-label">Max length</label>
+        <div class="col-sm-10">
+          <input type="number" class="form-control form-control-sm col-1" id="maxLength" name="maxLength"
+            [(ngModel)]="maxLength" (input)="store('maxLength', maxLength)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="sourceLanguage" class="col-sm-2 col-form-label">Source language</label>
+        <div class="col-sm-10">
+          <input class="form-control form-control-sm col-1" id="sourceLanguage" name="sourceLanguage"
+            [(ngModel)]="sourceLanguage" (input)="store('sourceLanguage', sourceLanguage)">
+        </div>
+      </div>
+      <div class="form-group row">
+        <label for="targetLanguage" class="col-sm-2 col-form-label">Target language</label>
+        <div class="col-sm-10">
+          <input class="form-control form-control-sm col-1" id="targetLanguage" name="targetLanguage"
+            [(ngModel)]="targetLanguage" (input)="store('targetLanguage', targetLanguage)">
+        </div>
+      </div>
+
+      <div class="form-group row">
+
+        <label for="staticMode" class="col-sm-2 col-form-label">Static mode</label>
+        <div class="form-check form-switch col-sm-1 align-self-center">
+          <input [(ngModel)]="staticMode" class="form-check-input" type="checkbox" role="switch" id="staticMode"
+            name="staticMode" (input)="store('staticMode', staticMode)">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="token" class="col-sm-2 col-form-label">OpenAI Token</label>
+        <div class="col-sm-10">
+          <input type="password" class="form-control form-control-sm col-1" id="token" name="targetLanguage"
+            [(ngModel)]="token" (input)="store('token', token)" [placeholder]="staticMode?'Optional':'Required'">
+        </div>
+        <small>In static mode no requests are made to the server after the page is loaded. This means that you will have
+          to manually copy and paste the promts into your chat with ChatGPT. However this is free, doesn't require a
+          token and is not subject to traffic limitations.
+        </small>
+      </div>
+      <hr>
+    </form>
+
+  </div>
+  <div>
+    <span *ngIf="showSettings" class="align-self-end">Original text</span>
+    <textarea autoResize [(ngModel)]="original" id="original" class="form-control mt-1 mb-1"></textarea>
+
+    <div class="d-flex justify-content-between">
+      <span class="align-self-end">Translation</span>
+      <div class="d-flex">
+        <span class="align-self-center p-1">Show errors</span>
+        <div class="btn-group">
+          <button (click)="setDiffMode(DiffMode.All)" class="btn btn-secondary btn"
+            [class.active]="diffMode === DiffMode.All">All</button>
+          <button (click)="setDiffMode(DiffMode.Current)" class="btn btn-secondary btn"
+            [class.active]="diffMode === DiffMode.Current">Current</button>
+          <button (click)="setDiffMode(DiffMode.None)" class="btn btn-secondary btn"
+            [class.active]="diffMode === DiffMode.None">None</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn" (click)="clearDiffs()" title="Clear">
+            <i class="bi bi-eraser-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-1 mb-1">
+      <div class="main">
+        <div #backdrop class="backdrop">
+          <div class="highlights">
+            <span *ngFor="let segment of segments">
+              <span *ngIf="segment.common">{{segment.common}}</span>
+              <span *ngIf="!segment.common">
+                <span [ngClass]="this.segmentColor(segment)">{{segment.removed}}</span>
+                <span *ngIf="segment.added && !segment.removed" class="green">{{' '}}</span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <textarea class="form-control highlighted" autoResize [(ngModel)]="translation" #textarea (input)="diff()"
+          (keyup)="updatePosition()" (click)="updatePosition()" id="translation"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex mt-1">
+    <div *ngIf="token.length == 0 || this.staticMode" class="d-flex col">
+      <div class="btn-group">
+        <button (click)="checkTranslation()" class="btn btn-secondary">Click here</button>
+      </div>
+      <span class="align-self-center p-1">to copy the prompt, then paste the result here:</span>
+      <textarea #fixedPaste class="btn btn-secondary button-like align-self-center" (paste)="handlePaste($event)"
+        (change)="handleAfterPaste()" (input)="handleAfterPaste()"></textarea>
+    </div>
+    <div *ngIf="token.length > 0 && !this.staticMode" class="col">
+      <div class="btn-group">
+        <button (click)="checkTranslation()" class="btn btn-secondary"><i class="bi bi-check"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <ng-container *ngFor="let segment of segments">
+      <div
+        *ngIf="!segment.common && (diffMode == DiffMode.All || (diffMode == DiffMode.Current && segment.start <= currentPosition && currentPosition <= segment.stop))"
+        class="col border p-1 d-inline-block rounded"
+        [class.border-secondary]="segment.start <= currentPosition && currentPosition <= segment.stop">
+        <span style="color: red">{{segment.removed}} </span>
+        <span style="color: green">{{segment.added}}</span>
+        <span *ngIf="!!segment.reason">: {{segment.reason}}</span>
+      </div>
+    </ng-container>
+  </div>
+
+  <div *ngIf="message.length > 0" class="m-2" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+    <div class="toast-header">
+      <strong class="me-auto">Error</strong>
+    </div>
+    <div class="toast-body">{{message}}</div>
+  </div>
+  
+</div>
