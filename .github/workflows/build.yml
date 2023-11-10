@@ -14,6 +14,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - run: mv frontend/* . && rm -rf backend frontend 
       - run: npm i && npm run ng build --prod
       - run: git fetch origin gh-pages --depth=1 && git checkout gh-pages 
       - run: cp -r dist/*/* . && rm -rf node_modules dist

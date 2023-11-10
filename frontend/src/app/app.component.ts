@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Change, diffWords } from 'diff';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 export class Segment {
@@ -26,7 +26,6 @@ export class AppComponent implements OnInit {
   @ViewChild("textarea") textarea!: ElementRef<HTMLTextAreaElement>;
   @ViewChild("fixedPaste") fixedPaste!: ElementRef<HTMLTextAreaElement>;
 
-  token: string = '';
   // text
   translation: string = '';
   original: string = '';
@@ -39,7 +38,6 @@ export class AppComponent implements OnInit {
   reasons = new Map<string, string>();
 
   // settings
-  // dataset = 'TinyStories';
   showSettings!: boolean;
   showAcks!: boolean;
   sourceLanguage!: string;
@@ -47,6 +45,14 @@ export class AppComponent implements OnInit {
   diffMode!: DiffMode;
   minLength!: number;
   maxLength!: number;
+  staticMode!: boolean;
+  token: string = '';
+
+  // constants
+  rootURL: string = 'http://localhost:9000';
+
+  // misc
+  message: string = '';
 
   constructor(private http: HttpClient) { }
 
@@ -88,8 +94,8 @@ export class AppComponent implements OnInit {
     this.sourceLanguage = this.restore('sourceLanguage', 'english');
     this.targetLanguage = this.restore('targetLanguage', 'european portuguese');
     this.diffMode = this.restore('diffMode', DiffMode.All);
-    // TODO: the code for tokens is not ready yet
-    // this.token = this.restore('token', '');
+    this.staticMode = this.restore('staticMode', true);
+    this.token = this.restore('token', '');
     this.showSettings = this.restore('showSettings', false);
     this.showAcks = this.restore('showAcks', true);
 
@@ -113,31 +119,61 @@ export class AppComponent implements OnInit {
   }
 
   async checkTranslation() {
-    let prompt = `Here is a text in ${this.sourceLanguage} followed by its translation to ${this.targetLanguage}. Respond with a corrected version of the translation witout any commentaries or preambles. If the translation is not complete only fix the existing part.`;
-    prompt = `${prompt}\n\n${this.original}\n<--translation-->\n${this.translation}`;
     if (this.token.length > 0) {
-      const response: any = await firstValueFrom(this.http.post('http://localhost:9000/api/check/', {
-        prompt, token: this.token
-      }));
-      this.fixed = response.text;
-      this.diff();
+      try {
+        const response: any = await firstValueFrom(this.http.post(`${this.rootURL}/api/check/`, {
+          original: this.original,
+          translation: this.translation,
+          sourceLanguage: this.sourceLanguage,
+          targetLanguage: this.targetLanguage,
+          token: this.token,
+        }));
+        this.fixed = response.text;
+        this.diff();
+
+      } catch (error) {
+        if (error instanceof HttpErrorResponse && error.status == 429) {
+          this.message = 'Too many requests. Please try again later.';
+          setTimeout(() => {
+            this.message = '';
+          }, 5000);
+        }
+      }
     } else {
+      let prompt = `Here is a text in ${this.sourceLanguage} followed by its translation to ${this.targetLanguage}. Respond with a corrected version of the translation witout any commentaries or preambles. If the translation is not complete only fix the existing part.`;
+      prompt = `${prompt}\n\n${this.original}\n<--translation-->\n${this.translation}`;
       await copyToClipboard(prompt);
     }
   }
 
   async next() {
-    // const response: any = await firstValueFrom(this.http.get('http://localhost:9000/api/sample/', {
-    //   params: {
-    //     min_length: this.minLength,
-    //     max_length: this.maxLength,
-    //   }
-    // }));
-    // this.original = response.text;
+    let text = '';
+    if (this.staticMode) {
+      const texts = this.localLibrary.filter(t => this.minLength <= t.length && t.length <= this.maxLength);
+      if (texts.length > 0) {
+        text = texts[Math.floor(Math.random() * texts.length)];
+      }
+    } else {
+      try {
+        const response: any = await firstValueFrom(this.http.get(`${this.rootURL}/api/sample/`, {
+          params: {
+            min_length: this.minLength,
+            max_length: this.maxLength,
+          }
+        }));
+        text = response.text;
 
-    const texts = this.localLibrary.filter(t => this.minLength <= t.length && t.length <= this.maxLength);
-    if (texts.length > 0) {
-      this.original = texts[Math.floor(Math.random() * texts.length)];
+      } catch (error) {
+        if (error instanceof HttpErrorResponse && error.status == 429) {
+          this.message = 'Too many requests. Please try again later.';
+          setTimeout(() => {
+            this.message = '';
+          }, 5000);
+        }
+      }
+    }
+    if (text.length > 0) {
+      this.original = text;
       this.translation = '';
       this.currentPosition = 0;
       this.clearDiffs();
