@@ -24,9 +24,9 @@ app.state.lock = Lock()
 # constants
 DATASETS = load_datasets()
 API_TOKEN = os.environ['API_TOKEN']
+DEV = bool(int(os.environ['DEV']))
 MAX_TOKENS = 2000
 FREE_TOKEN = 'free'
-DEV = True
 
 BodyStr = Annotated[str, Body()]
 
@@ -64,7 +64,7 @@ async def check(request: Request, original: BodyStr, translation: BodyStr, sourc
 
     # saving some money while debugging
     if DEV:
-        result = translation + '(DEV mode)'
+        result = translation + '(currently the server is running in DEV mode)'
     else:
         client = AsyncOpenAI(api_key=token)
         response = await client.chat.completions.create(

@@ -2,6 +2,7 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Change, diffWords } from 'diff';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export class Segment {
   constructor(
@@ -47,9 +48,6 @@ export class AppComponent implements OnInit {
   maxLength!: number;
   staticMode!: boolean;
   token: string = '';
-
-  // constants
-  rootURL: string = 'http://localhost:9000';
 
   // misc
   message: string = '';
@@ -121,7 +119,7 @@ export class AppComponent implements OnInit {
   async checkTranslation() {
     if (this.token.length > 0) {
       try {
-        const response: any = await firstValueFrom(this.http.post(`${this.rootURL}/api/check/`, {
+        const response: any = await firstValueFrom(this.http.post(`${environment.API_ROOT}/api/check/`, {
           original: this.original,
           translation: this.translation,
           sourceLanguage: this.sourceLanguage,
@@ -132,12 +130,7 @@ export class AppComponent implements OnInit {
         this.diff();
 
       } catch (error) {
-        if (error instanceof HttpErrorResponse && error.status == 429) {
-          this.message = 'Too many requests. Please try again later.';
-          setTimeout(() => {
-            this.message = '';
-          }, 5000);
-        }
+        this.processError(error);
       }
     } else {
       let prompt = `Here is a text in ${this.sourceLanguage} followed by its translation to ${this.targetLanguage}. Respond with a corrected version of the translation witout any commentaries or preambles. If the translation is not complete only fix the existing part.`;
@@ -155,7 +148,7 @@ export class AppComponent implements OnInit {
       }
     } else {
       try {
-        const response: any = await firstValueFrom(this.http.get(`${this.rootURL}/api/sample/`, {
+        const response: any = await firstValueFrom(this.http.get(`${environment.API_ROOT}/api/sample/`, {
           params: {
             min_length: this.minLength,
             max_length: this.maxLength,
@@ -164,12 +157,7 @@ export class AppComponent implements OnInit {
         text = response.text;
 
       } catch (error) {
-        if (error instanceof HttpErrorResponse && error.status == 429) {
-          this.message = 'Too many requests. Please try again later.';
-          setTimeout(() => {
-            this.message = '';
-          }, 5000);
-        }
+        this.processError(error);
       }
     }
     if (text.length > 0) {
@@ -184,10 +172,10 @@ export class AppComponent implements OnInit {
     return segment.added!.length > 0 && segment.removed!.length > 0 ? 'blue' : 'red';
   }
 
-  processSegment(start: number, segment: Change[]) {
+  processSegment(start: number, changes: Change[]) {
     let added: string[] = [];
     let removed: string[] = [];
-    segment.forEach(change => {
+    changes.forEach(change => {
       if (change.added) {
         added.push(change.value);
       } else if (change.removed) {
@@ -198,9 +186,13 @@ export class AppComponent implements OnInit {
       }
     })
 
-    const left = removed.join('');
-    const right = added.join('');
-    return new Segment(start, start + left.length, undefined, left, right);
+    let left = removed.join('');
+    let right = added.join('');
+    const stop = start + left.length;
+    // take the original text with possible diactrics
+    left = this.translation.slice(start, stop);
+    right = this.fixed.slice(start, start + right.length);
+    return new Segment(start, stop, undefined, left, right);
   }
 
   updatePosition() {
@@ -229,8 +221,10 @@ export class AppComponent implements OnInit {
           segments.push(this.processSegment(getLast(segments), edited));
           edited = [];
         }
-        const index = getLast(segments);
-        segments.push(new Segment(index, index + change.value.length, change.value));
+        const start = getLast(segments);
+        const stop = start + change.value.length;
+        // take the variant with fixed diactrics
+        segments.push(new Segment(start, stop, this.fixed.slice(start, stop)));
       }
     }
     if (edited.length > 0) {
@@ -247,6 +241,19 @@ export class AppComponent implements OnInit {
     // })
 
     this.segments = segments;
+  }
+
+  processError(error: any) {
+    let message;
+    if (error instanceof HttpErrorResponse && error.status == 429) {
+      message = 'Too many requests. Please try again later.';
+    } else {
+      message = 'An unknown error occurred ¯\_(ツ)_/¯';
+    }
+    this.message = message;
+    setTimeout(() => {
+      this.message = '';
+    }, 5000);
   }
 }
 
