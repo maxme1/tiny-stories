@@ -133,9 +133,7 @@ export class AppComponent implements OnInit {
         this.processError(error);
       }
     } else {
-      let prompt = `Here is a text in ${this.sourceLanguage} followed by its translation to ${this.targetLanguage}. Respond with a corrected version of the translation witout any commentaries or preambles. If the translation is not complete only fix the existing part.`;
-      prompt = `${prompt}\n\n${this.original}\n<--translation-->\n${this.translation}`;
-      await copyToClipboard(prompt);
+      await copyToClipboard(`<${this.sourceLanguage}>\n${this.original}\n<translation to ${this.targetLanguage}>\n${this.translation}\n<fixed translation>`);
     }
   }
 

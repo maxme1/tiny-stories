@@ -15,9 +15,9 @@ jobs:
         with:
           node-version: 18
       - run: mv frontend/* . && rm -rf backend frontend 
-      - run: npm i && npm run ng build --prod
+      - run: npm i && npm run ng build
       - run: git fetch origin gh-pages --depth=1 && git checkout gh-pages 
-      - run: cp -r dist/*/* . && rm -rf node_modules dist
+      - run: mv dist /tmp/ && rm -rf ./* && mv /tmp/dist/*/* .
       - run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions-bot@users.noreply.github.com'
